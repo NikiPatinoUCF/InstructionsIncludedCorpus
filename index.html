@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Instructions Included — MG Vocabulary Field</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d0d;
+    --surface: #141414;
+    --border: #222;
+    --text: #c8c8c0;
+    --dim: #555;
+    --accent: #c8a96e;
+    --accent2: #7eb8c8;
+    --accent3: #c87e7e;
+    --highlight: #e8e0d0;
+    --font-mono: 'DM Mono', monospace;
+    --font-serif: 'Cormorant Garamond', serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 48px 40px;
+  }
+
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 24px;
+    margin-bottom: 40px;
+  }
+
+  .challenge-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  h1 {
+    font-family: var(--font-serif);
+    font-size: 32px;
+    font-weight: 300;
+    color: var(--highlight);
+    font-style: italic;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 0.12em;
+  }
+
+  .prompt-block {
+    margin-top: 16px;
+    padding: 14px 18px;
+    border: 1px solid #1e1e1e;
+    background: rgba(200,169,110,0.03);
+    border-left: 2px solid var(--accent);
+    max-width: 680px;
+  }
+
+  .prompt-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .prompt-text {
+    font-family: var(--font-serif);
+    font-size: 15px;
+    font-style: italic;
+    color: #888880;
+    line-height: 1.7;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-bottom: 32px;
+  }
+
+  .panel {
+    border: 1px solid var(--border);
+    padding: 24px;
+    background: var(--surface);
+  }
+
+  .panel-title {
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Frequency bars */
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .bar-label {
+    width: 120px;
+    font-size: 12px;
+    color: var(--text);
+    flex-shrink: 0;
+    text-align: right;
+  }
+
+  .bar-label.mg { color: var(--accent); }
+  .bar-label.niki { color: var(--accent2); }
+  .bar-label.both { color: var(--accent); font-weight: 500; }
+
+  .bar-track {
+    flex: 1;
+    height: 2px;
+    background: #1e1e1e;
+    position: relative;
+  }
+
+  .bar-fill {
+    height: 100%;
+    background: var(--dim);
+    transition: width 1s ease;
+  }
+
+  .bar-fill.mg { background: var(--accent); }
+  .bar-fill.niki { background: var(--accent2); }
+  .bar-fill.both { background: var(--accent); }
+  .bar-fill.corpus { background: #3a3a3a; }
+
+  .bar-count {
+    width: 28px;
+    font-size: 11px;
+    color: var(--dim);
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* Vocabulary cloud / scatter */
+  .vocab-field {
+    position: relative;
+    height: 340px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+
+  .vocab-field-title {
+    position: absolute;
+    top: 16px;
+    left: 20px;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--dim);
+    z-index: 10;
+  }
+
+  .vocab-word {
+    position: absolute;
+    cursor: pointer;
+    transition: color 0.2s, opacity 0.2s;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+  }
+
+  .vocab-word:hover { opacity: 1 !important; }
+
+  .vocab-word.mg-term {
+    color: var(--accent);
+  }
+
+  .vocab-word.corpus-only {
+    color: #3a3a3a;
+  }
+
+  .vocab-word.niki-strong {
+    color: var(--accent2);
+  }
+
+  /* Tooltip */
+  .tooltip {
+    position: fixed;
+    background: #1a1a1a;
+    border: 1px solid var(--accent);
+    padding: 10px 14px;
+    font-size: 11px;
+    color: var(--text);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 100;
+    max-width: 220px;
+    line-height: 1.6;
+  }
+
+  .tooltip.visible { opacity: 1; }
+
+  .tooltip .t-word {
+    color: var(--accent);
+    font-weight: 500;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* Register matrix */
+  .matrix {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+
+  .matrix-cell {
+    background: var(--surface);
+    padding: 20px 16px;
+  }
+
+  .matrix-cell-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 12px;
+  }
+
+  .matrix-words {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .matrix-word {
+    font-size: 11px;
+    padding: 2px 6px;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  .matrix-word.present {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(200, 169, 110, 0.05);
+  }
+
+  .matrix-word.absent {
+    color: #2a2a2a;
+    border-color: #1e1e1e;
+  }
+
+  /* Finding blocks */
+  .finding {
+    border-left: 2px solid var(--accent);
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    background: rgba(200, 169, 110, 0.03);
+  }
+
+  .finding-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .finding-text {
+    font-family: var(--font-serif);
+    font-size: 15px;
+    color: var(--highlight);
+    line-height: 1.7;
+    font-style: italic;
+  }
+
+  .finding-text em {
+    font-style: normal;
+    color: var(--accent);
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--dim);
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .full-width {
+    grid-column: 1 / -1;
+  }
+
+  .section-gap { margin-bottom: 40px; }
+
+  /* Axis labels */
+  .axis-label {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #2a2a2a;
+  }
+
+  /* Threshold line */
+  .threshold {
+    position: absolute;
+    border-top: 1px dashed #222;
+    width: 100%;
+    pointer-events: none;
+  }
+
+  .threshold-label {
+    position: absolute;
+    right: 12px;
+    font-size: 9px;
+    color: #2a2a2a;
+    transform: translateY(-14px);
+  }
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="challenge-label">Vocal Media Challenge 01 · Corpus Analysis · Machine Gospel Vocabulary Research</div>
+  <h1>Instructions Included</h1>
+  <div class="subtitle">30 submissions · institutional compliance register · system / body / language</div>
+  <div class="prompt-block">
+    <div class="prompt-label">challenge prompt</div>
+    <div class="prompt-text">Tell a story in the form of instructions, guidelines, or a how-to manual for something fictional or mundane. Trust the form to carry what could not be said outright.</div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#c8a96e"></div> MG-relevant term present in corpus</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#7eb8c8"></div> Term unique to Niki's submission</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#3a3a3a"></div> Corpus term without MG relevance</div>
+</div>
+
+<!-- Vocabulary Field -->
+<div class="vocab-field" id="vocabField1">
+  <div class="vocab-field-title">Corpus Vocabulary Field — size = frequency · color = MG relevance</div>
+</div>
+
+<!-- Two-column panels -->
+<div class="grid section-gap">
+  <div class="panel">
+    <div class="panel-title">MG-Relevant Terms — Full Corpus Frequency</div>
+    <div id="mgBars1"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">Niki's Submission — Unique MG Vocabulary</div>
+    <div id="nikiBars1"></div>
+  </div>
+</div>
+
+<!-- Register Matrix -->
+<div class="panel-title" style="margin-bottom:12px">MG Register Matrix — which terms this corpus activates</div>
+<div class="matrix" id="matrix1"></div>
+
+<!-- Findings -->
+<div class="section-gap">
+  <div class="finding">
+    <div class="finding-label">Corpus Finding</div>
+    <div class="finding-text">The Instructions Included corpus runs on <em>compliance language</em> — will, must, rule, step, procedure. The system speaks in second person. The body is managed, not inhabited. <em>Human</em> appears 36× across the corpus, always as the object of institutional attention.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-label">MG Vocabulary Confirmed</div>
+    <div class="finding-text">Terms that survive across this corpus and map directly to MG's institutional register: <em>system, human, integration, ceremony, transformation, technician, interface, automated, compliance, document, machine, programming</em>. The corpus provided the register. Niki's piece compressed it into procedure.</div>
+  </div>
+  <div class="finding">
+    <div class="finding-label">Unique Signal</div>
+    <div class="finding-text"><em>Ceremony</em> and <em>integration</em> appear in Niki's submission and zero other documents. The corpus processes humans; Niki's submission processes <em>children</em>. That specificity — the age of the body being managed — is MG's signature within this register.</div>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+const mgTerms = {
+  // from corpus data
+  'will':291,'remember':71,'call':51,'said':45,'home':43,'keep':39,'family':39,
+  'house':36,'hold':36,'human':36,'love':36,'help':35,'children':34,'body':34,
+  'care':32,'world':31,'pain':30,'story':30,'order':29,'door':27,'told':27,
+  'child':27,'system':26,'past':25,'light':25,'son':24,'safe':23,'face':23,
+  'name':23,'words':22
+};
+
+const nikiTerms = {
+  'human':12,'ceremony':8,'transformation':8,'technicians':7,'system':6,
+  'distress':6,'family':6,'interface':5,'automated':5,'child':5,'language':5,
+  'will':5,'integration':5,'machines':4,'care':4,'technician':3,'systems':3,
+  'document':3,'compliance':3,'hands':2,'voice':2,'consent':2,'machine':1,'data':1,'programming':1
+};
+
+const allCorpusTop = [
+  {w:'will',c:291,mg:true},{w:'one',c:191,mg:false},{w:'time',c:173,mg:false},
+  {w:'may',c:145,mg:false},{w:'step',c:108,mg:false},{w:'rule',c:89,mg:false},
+  {w:'remember',c:71,mg:true},{w:'never',c:79,mg:false},{w:'feel',c:73,mg:false},
+  {w:'every',c:71,mg:true},{w:'life',c:68,mg:false},{w:'still',c:67,mg:false},
+  {w:'soul',c:66,mg:false},{w:'yourself',c:65,mg:false},{w:'call',c:51,mg:true},
+  {w:'said',c:45,mg:true},{w:'home',c:43,mg:true},{w:'human',c:36,mg:true},
+  {w:'house',c:36,mg:true},{w:'hold',c:36,mg:true},{w:'love',c:36,mg:true},
+  {w:'help',c:35,mg:true},{w:'children',c:34,mg:true},{w:'body',c:34,mg:true},
+  {w:'care',c:32,mg:true},{w:'world',c:31,mg:true},{w:'pain',c:30,mg:true},
+  {w:'story',c:30,mg:true},{w:'order',c:29,mg:true},{w:'door',c:27,mg:true},
+  {w:'child',c:27,mg:true},{w:'system',c:26,mg:true},{w:'safe',c:23,mg:true},
+  {w:'face',c:23,mg:true},{w:'name',c:23,mg:true},{w:'words',c:22,mg:true}
+];
+
+const mgRegisters = {
+  'INSTITUTIONAL': ['system','human','integration','ceremony','compliance','procedure','protocol','automated','interface','document','programming','machine'],
+  'CORPOREAL': ['body','skin','bones','face','hands','blood','pain','force','breath','flesh','weight','hunger'],
+  'LANGUAGE / NAMING': ['word','words','language','name','called','told','said','speak','voice','story','record','kept']
+};
+
+// Build vocabulary field
+function buildVocabField(containerId, terms, nikiT) {
+  const container = document.getElementById(containerId);
+  const w = container.offsetWidth;
+  const h = container.offsetHeight;
+  const placed = [];
+
+  const sorted = [...terms].sort((a,b) => b.c - a.c).slice(0, 55);
+  const max = sorted[0].c;
+
+  sorted.forEach((item, i) => {
+    const el = document.createElement('div');
+    el.className = 'vocab-word';
+    const size = Math.max(9, Math.min(26, 9 + (item.c / max) * 17));
+    el.style.fontSize = size + 'px';
+    el.textContent = item.w;
+
+    const isNiki = nikiT[item.w] && !item.mg;
+    const isMG = item.mg;
+
+    if (isNiki) el.classList.add('niki-strong');
+    else if (isMG) el.classList.add('mg-term');
+    else el.classList.add('corpus-only');
+
+    el.style.opacity = isMG ? '0.85' : isNiki ? '0.9' : '0.25';
+
+    // Place with collision avoidance
+    let placed_ok = false;
+    let attempts = 0;
+    while (!placed_ok && attempts < 80) {
+      const x = 30 + Math.random() * (w - 160);
+      const y = 50 + Math.random() * (h - 80);
+      const tooClose = placed.some(p => Math.abs(p.x - x) < 90 && Math.abs(p.y - y) < 22);
+      if (!tooClose) {
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
+        placed.push({x, y});
+        placed_ok = true;
+      }
+      attempts++;
+    }
+    if (!placed_ok) {
+      el.style.left = (30 + Math.random() * (w-120)) + 'px';
+      el.style.top = (50 + Math.random() * (h-60)) + 'px';
+    }
+
+    // Tooltip
+    el.addEventListener('mouseenter', (e) => {
+      const tip = document.getElementById('tooltip');
+      const iN = nikiT[item.w];
+      tip.innerHTML = `<span class="t-word">${item.w}</span>corpus: ${item.c}×${iN ? '<br>niki: ' + iN + '×' : ''}${isMG ? '<br><span style="color:#c8a96e;font-size:10px">↳ MG register</span>' : ''}`;
+      tip.style.left = (e.clientX + 14) + 'px';
+      tip.style.top = (e.clientY - 10) + 'px';
+      tip.classList.add('visible');
+    });
+    el.addEventListener('mouseleave', () => {
+      document.getElementById('tooltip').classList.remove('visible');
+    });
+    el.addEventListener('mousemove', (e) => {
+      const tip = document.getElementById('tooltip');
+      tip.style.left = (e.clientX + 14) + 'px';
+      tip.style.top = (e.clientY - 10) + 'px';
+    });
+
+    container.appendChild(el);
+  });
+}
+
+// Build frequency bars
+function buildBars(containerId, terms, max, colorClass) {
+  const container = document.getElementById(containerId);
+  const sorted = Object.entries(terms).sort((a,b) => b[1]-a[1]).slice(0,18);
+  const maxVal = sorted[0][1];
+  sorted.forEach(([w, c]) => {
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+    row.innerHTML = `
+      <div class="bar-label ${colorClass}">${w}</div>
+      <div class="bar-track"><div class="bar-fill ${colorClass}" style="width:${(c/maxVal*100)}%"></div></div>
+      <div class="bar-count">${c}</div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+// Build register matrix
+function buildMatrix(containerId, registers, corpusTerms, nikiT) {
+  const container = document.getElementById(containerId);
+  Object.entries(registers).forEach(([reg, words]) => {
+    const cell = document.createElement('div');
+    cell.className = 'matrix-cell';
+    cell.innerHTML = `<div class="matrix-cell-label">${reg}</div><div class="matrix-words"></div>`;
+    const wordsDiv = cell.querySelector('.matrix-words');
+    words.forEach(w => {
+      const span = document.createElement('span');
+      span.className = 'matrix-word';
+      const inCorpus = corpusTerms[w];
+      const inNiki = nikiT[w];
+      if (inCorpus || inNiki) {
+        span.classList.add('present');
+        span.title = `corpus: ${inCorpus||0}× / niki: ${inNiki||0}×`;
+      } else {
+        span.classList.add('absent');
+      }
+      span.textContent = w;
+      wordsDiv.appendChild(span);
+    });
+    container.appendChild(cell);
+  });
+}
+
+buildVocabField('vocabField1', allCorpusTop, nikiTerms);
+buildBars('mgBars1', mgTerms, 300, 'mg');
+buildBars('nikiBars1', nikiTerms, 15, 'niki');
+buildMatrix('matrix1', mgRegisters, mgTerms, nikiTerms);
+</script>
+</body>
+</html>
